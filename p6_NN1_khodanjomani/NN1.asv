@@ -1,0 +1,115 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% In the name of God %%%%%%%
+%%%%%%% shaghayegh reza %%%%%%%%%
+%%%%%%%% project arshad %%%%%%%%%
+%%%%%%%%                %%%%%%%%%
+%%%%% 28 ordibehesht 87 %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clc; close all; clear all;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%
+xx=load('');
+xx=CB1;
+xx(:,19:end)=[];
+d=load('');
+%%%
+eta=0.01;
+max_error=0.01;
+alpha=0.7;
+p=1;
+k=1;
+E=0;
+S=0;
+n_z=18;
+n_y2=20;
+n_a=10;
+n_b=1;
+n_y1=20;
+n_x=18;
+%%%
+v1=0.1*rand(n_x+1,n_y1);
+dv1=zeros(n_x+1,n_y1);
+w1=0.1*rand(n_y1+1,n_a);
+dw1=zeros(n_y1+1,n_a);
+u1=0.1*rand(n_y1+1,n_b);
+du1=zeros(n_y1+1,n_b);
+w2=0.1*rand(n_a+1,n_y2);
+dw2=zeros(n_a+1,n_y2);
+u2=0.1*rand(n_b+1,n_y2);
+du2=zeros(n_b+1,n_y2);
+v2=0.1*rand(n_y2+1,n_z);
+dv2=zeros(n_y2+1,n_z);
+E=5;
+%%%
+while E>0.01
+    E=0;
+    for p=1:length(xx)
+       x=xx(p,:);
+       y1=logsig([x 1]*v1);
+       b=logsig([y1 1]*u1);
+       a=logsig([y1 1]*w1);
+       y2=logsig([a 1]*w2+[b 1]*u2);
+       z=logsig([y2 1]*v2);
+       E=E+sum((x-z).^2)+sum((d-b).^2);
+       dz=(x-z).*z.*(1-z);
+       Y2=[y2 1];
+       dY2=Y2.*(1-Y2).*(dz*v2');
+       dY2(n_y2+1)=[];
+       dv2=eta.*Y2'*dz+alpha.*dv2;
+       v2=v2+dv2;
+       A=[a 1];
+       dA=A.*(1-A).*(dY2*w2');
+       dA(n_a+1)=[];
+       dw2=eta.*A'*dY2+alpha.*dw2;
+       w2=w2+dw2;
+       D=[d 1];
+       du2=eta.*D'*dY2+alpha.*du2;
+       u2=u2+du2;
+       db=(d-b).*b.*(1-b);
+       Y1=[y1 1];
+       dw1=eta.*Y1'*dA+alpha.*dw1;
+       w1=w1+dw1;
+       du1=eta.*Y1'*db+alpha.*du1;
+       u1=u1+du1;
+       dY1=Y1.*(1-Y1).*(dA*w1'+db*u1');
+       X=[x 1];
+       dY1(n_y1+1)=[];
+       dv1=eta.*X'*dY1+alpha.*dv1;
+       v1=v1+dv1;
+    end
+   EE=sqrt(E/(length(xx)*18))
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%‰„Ê‰ÂùÂ«Ì  ⁄·Ì„
+X=CB1; X(:,19:end)=[];
+D=X;
+PP=length(X); %tedad dadegane talim
+X(:,19)=1;   %bayas yek vorodi
+%step1:
+a=.7; eta=.01; %÷—Ì» Ì«œ êÌ—Ì
+Emax=.001;%»«·« —Ì‰  «»⁄ „⁄Ì«— Œÿ«Ì ﬁ«»· ﬁ»Ê·
+v=0.01*randn(19,54); dv(19,54)=0;
+w=0.01*randn(55,18); dw(55,18)=0;
+E=0;p=1;k=1;n=55; l=18; m=19;
+%step2:
+EE=5;
+r=randperm(PP);X=X(r,1:19);D=D(r,1:18);
+while Emax<EE
+    for p=1:PP
+        x=X(p,:); d=D(p,:);
+        y=logsig(x*v);
+        y=[y 1];% because of thershold
+        z=logsig(y*w);
+        E=E+sum((d-z).^2);
+        %output layer
+        dz=(d-z).*z.*(1-z);
+        dy=y.*(1-y).*(dz*w');
+        %hidden layer
+        dw=eta*y'*dz+a*dw; w=w+dw;
+        dy(n)=[];
+        dv=eta*x'*dy+a*dv; v=v+dv;
+    end
+    EE=sqrt(E/(p*l)); error(k)=EE;
+    plot(k,EE,'-*'); pause(0.1); hold on;
+    k=k+1;E=0;p=1;
+end

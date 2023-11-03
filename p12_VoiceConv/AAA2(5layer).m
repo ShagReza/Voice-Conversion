@@ -1,0 +1,114 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%% project arshad %%%%%%%%%%%%
+%%%%%%%%%%%% 5 layer NN %%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+clc,close all,clear all
+% ------loading data for training----------------------
+xx=[];
+dd=[];
+m=0;
+num_session=4;
+subfirst=100;
+subend=199;
+for num_subject=subfirst:subend
+    for num_session=4:4
+        x=load(['C:\Users\Admin\BME\project arshad\data\LHCB_ normalized\LHCB_',num2str(num_session),num2str(num_subject)]);
+        x=x.CBw;
+        xx=[xx;x];
+        dd(1+m:length(x)+m,1:(subend-subfirst+1))=0.01;
+        dd(1+m:length(x)+m,num_subject-99)=.99; %%cod goyande az 1 be .95
+        m=m+length(x);
+    end
+end
+xx(:,19:end)=[];
+
+%%%
+input=xx;
+size_select = size(input);
+P=size_select(1);
+%%%
+e=[];
+eta=.5;
+MaxE=.01;
+alpha=.7;
+M=18;   %first layer
+N=128;    %second layer
+K=20;    %middle layer
+%%%
+Wa=0.01*rand(M+1,N)-0.005;
+Va=0.01*rand(N+1,K)-0.005;
+
+Wb=0.01*rand(K,N)-0.005;
+Vb=0.01*rand(N+1,M)-0.005;
+
+Ua=0.01*rand(N+1,100)-0.005;
+Ub=0.01*rand(100,N)-0.005;
+
+DeltaUa=0.01*rand(N+1,100)-0.005;
+DeltaUb=0.01*rand(100,N)-0.005;
+
+DeltaWa=zeros(M+1,N);
+DeltaVa=zeros(N+1,K);
+
+DeltaWb=zeros(K,N);
+DeltaVb=zeros(N+1,M);
+
+clear CB r size_select
+p=1;k=1;E=0;counter=1;F=1;q=1;
+tic
+%%%%
+eta=(-0.4/4999)*k+(0.5+0.4/4999);
+while (F) && (eta>0)
+    k
+    r=randperm(P);
+    input = input(r,:);
+    d = input;   %desired output
+    while p<=P
+        xa=input(p,:);
+        xa=[xa  1];
+        ya=logsig(xa*Wa);
+        ya = [ya , +1];
+        z=logsig(ya*Va);
+        b=logsig(ya*Ua);
+        z = [z];
+        yb=logsig(z*Wb+b*Ub);
+        yb = [yb , +1];
+        xb=(yb*Vb);
+
+        E=E+sum((d(p,:)-xb).^2);
+
+        dxb=(d(p,:)-xb)*.001;
+        dyb=(dxb*Vb') .* yb .* (1-yb);
+        dyb(end) = [];
+        dz=(dyb*Wb') .* z .* (1-z);
+        %dz(end) = [];
+        dya=(dz*Va') .* ya .* (1-ya);
+        dya(end) = [];
+
+        DeltaVb=eta.* yb' *dxb+alpha.*DeltaVb;
+        Vb=Vb+DeltaVb;
+        DeltaWb=eta.* z' *dyb+alpha.*DeltaWb;
+        Wb=Wb+DeltaWb;
+        DeltaVa=eta.* ya' *dz+alpha.*DeltaVa;
+        Va=Va+DeltaVa;
+        DeltaWa=eta.* xa' *dya+alpha.*DeltaWa;
+        Wa=Wa+DeltaWa;
+        p=p+1;
+
+    end
+    e(k)=sqrt(E/(M*P));
+    H=e(k)
+    %     hold on;
+    %     plot(e);
+    %     drawnow;
+    if H <=MaxE
+        F=0;
+    else
+        E=0;
+        k=k+1;
+        p=1;
+    end
+    eta=(-0.4/4999)*k+(0.5+0.4/4999);
+end
+
+

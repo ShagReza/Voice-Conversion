@@ -1,0 +1,49 @@
+% LHCB
+% without any normalization method
+
+clear all ; clc; close all ;
+
+N = 1024 ;								 % Frame length
+stp = 512;								 % Frame rate
+L = 18 ;								 % Number of LHCB parameters
+Q = 18 ;								 % Number of Filters
+fc = 7500 ;								 % Final frequency is 7500 Hz
+fs = 44100 ;							 % Sampling frequency
+kc = round( fc * N / fs );				 % Equivallent of 7500 Hz in DFT domain
+f = fs / N * (0:kc);					 % Frequencies samples in hertz
+win = hamming(N);						 % Temporal window
+fbark = 6 * log( f / 600 + sqrt( ( f / 600 ).^2 + 1 ) ) ;
+CBFBS = zeros(Q,length(f));
+
+for zk = 1 : Q
+    bk = ( ( fbark >= zk - 1 ) & ( fbark < zk +1 ) ) ;
+    CBFBS(zk , :) = bk .* ( 0.5 + 0.5 * cos( pi * ( fbark - zk ) ) ) ;
+end
+CBFBS = CBFBS';
+CBFBS = CBFBS .^ 2 ;
+
+for n=4:5
+    for K=100:200,
+        n,K
+        filename = ['C:\Users\Admin\BME\project arshad\data\Wav\W',num2str(n),num2str(K),'.wav'];
+        disp(filename);
+        [s,fs] = wavread(filename);
+        CB = [];
+        m = 1;
+        while m < length(s) - N + 1,
+            frm = s(m : m+N-1);
+            frm = frm - mean(frm);
+            frmwin = frm .* win;
+            frmfft = fft(frmwin , N);
+            frmfft(kc+2 : end) = [];
+            frmfftsqr = real( frmfft .* conj(frmfft) )';
+            cb = frmfftsqr * CBFBS ;
+            cbcepst = log(0.01 + cb) ;
+            CB = [CB ; cbcepst] ;
+            m = m + stp;
+        end
+
+        save( ['C:\Users\Admin\BME\project arshad\data\LHCB_without normalization\LHCB_',num2str(n),num2str(K)],'CB' );
+        clear CB;
+    end
+end

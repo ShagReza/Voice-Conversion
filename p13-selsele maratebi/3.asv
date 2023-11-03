@@ -1,0 +1,66 @@
+load
+
+while (F) && (eta>0)
+    k
+    r=randperm(P);
+    input = input(r,:);
+    d = input;   %desired output
+    while p<=P
+        xa=input(p,:);
+        D=dd(p,:);
+        xa=[xa  1];
+        ya=logsig(xa*Wa);
+        ya = [ya , +1];
+        z=logsig(ya*Va);
+        b1=logsig(ya*v1);
+        b1=[b1 , 1];
+        b2=logsig(b1*v2);
+        b3=logsig(D*v3);
+        b3=[b3 ,1];
+        yb=logsig(b3*v4 + z*Wb);
+        yb = [yb , +1];
+        xb=(yb*Vb);
+       
+        E=E+sum((d(p,:)-xb).^2);
+
+        dxb=(d(p,:)-xb)*.001;
+        dyb=(dxb*Vb') .* yb .* (1-yb);
+        dyb(end) = [];
+        db3=(dyb*v4') .* b3 .* (1-b3);
+        db3(end) = [];
+        db2=(D-b2).*b2.*(1-b2);
+        db1=(db2*v2') .* b1 .* (1-b1);
+        db1(end) = [];
+       
+
+        Deltav4=eta.* b3' *dyb+alpha.*Deltav4;
+        v4=v4+Deltav4;
+        Deltav3=eta.* b2' *db3+alpha.*Deltav3;
+        v3=v3+Deltav3;
+        Deltav2=eta.* b2' *db3+alpha.*Deltav2;
+        v2=v2+Deltav2;
+        Deltav1=eta.* b2' *db3+alpha.*Deltav1;
+        v1=v1+Deltav3;
+        DeltaWb=eta.* z' *dyb+alpha.*DeltaWb;
+        Wb=Wb+DeltaWb;
+        DeltaVa=eta.* ya' *dz+alpha.*DeltaVa;
+        Va=Va+DeltaVa;
+        DeltaWa=eta.* xa' *dya+alpha.*DeltaWa;
+        Wa=Wa+DeltaWa;
+        p=p+1;
+
+    end
+    e(k)=sqrt(E/(M*P));
+    H=e(k)
+    %     hold on;
+    %     plot(e);
+    %     drawnow;
+    if H <=MaxE
+        F=0;
+    else
+        E=0;
+        k=k+1;
+        p=1;
+    end
+    eta=(-0.4/4999)*k+(0.5+0.4/4999);
+end
